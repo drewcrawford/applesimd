@@ -3,6 +3,7 @@ use crate::Float3;
 
 ///simd_float3x3
 #[repr(C)] //see MSL table 2.5
+#[derive(Debug)]
 pub struct Float3x3 {
     pub columns: [crate::Float3; 3]
 }
@@ -30,5 +31,10 @@ impl Float3x3 {
                 Float3::new(c, f, i),
             ]
         }
+    }
+
+    ///Access the internal columns
+    #[inline] pub fn columns_mut(&mut self) -> &mut [crate::Float3; 3] {
+        &mut self.columns
     }
 }

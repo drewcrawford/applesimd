@@ -74,6 +74,16 @@ impl Float3 {
     #[inline] pub const fn z(&self) -> f32 {
         self.z
     }
+    #[inline] pub fn x_mut(&mut self) -> &mut f32 {
+        &mut self.x
+    }
+    #[inline] pub fn y_mut(&mut self) -> &mut f32 {
+        &mut self.y
+    }
+    #[inline] pub fn z_mut(&mut self) -> &mut f32 {
+        &mut self.z
+    }
+
 
     ///The * operator in simd.
     #[inline] pub fn elementwise_mult(self, other: Float3) -> Self {
