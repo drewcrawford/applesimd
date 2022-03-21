@@ -116,6 +116,53 @@ impl Float3 {
     }
 }
 
+/// simd_float4
+#[repr(C)]
+#[derive(Copy,Clone,Debug)]
+pub struct Float4 {
+    x: f32,
+    y: f32,
+    z: f32,
+    w: f32,
+}
+impl Float4 {
+    ///Creates a new type.
+    #[inline] pub const fn new(x: f32, y: f32, z: f32,w: f32) -> Self {
+        Float4 {
+            x,
+            y,
+            z,
+            w,
+        }
+    }
+    #[inline] pub const fn x(&self) -> f32 {
+        self.x
+    }
+    #[inline] pub const fn y(&self) -> f32 {
+        self.y
+    }
+    #[inline] pub const fn z(&self) -> f32 {
+        self.z
+    }
+    #[inline] pub const fn w(&self) -> f32 {
+        self.w
+    }
+
+    #[inline] pub fn x_mut(&mut self) -> &mut f32 {
+        &mut self.x
+    }
+    #[inline] pub fn y_mut(&mut self) -> &mut f32 {
+        &mut self.y
+    }
+    #[inline] pub fn z_mut(&mut self) -> &mut f32 {
+        &mut self.z
+    }
+    #[inline] pub fn w_mut(&mut self) -> &mut f32 {
+        &mut self.w
+    }
+}
+
+
 #[test] fn test_rsqrt() {
     let float2 = Float2::new(1.0, 25.0);
     let sqrt = float2.fast_rsqrt();
