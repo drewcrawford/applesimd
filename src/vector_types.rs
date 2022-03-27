@@ -1,5 +1,50 @@
-use std::arch::aarch64::{vrsqrte_f32, vrsqrts_f32};
+use std::arch::aarch64::{vminvq_u32, vrsqrte_f32, vrsqrts_f32};
 use std::mem::MaybeUninit;
+use std::ops::{BitAnd, BitOr, Neg};
+
+#[derive(Copy,Clone,Debug)]
+#[repr(C, align(16))]
+pub struct Int3 {
+    x: i32,
+    y: i32,
+    z: i32,
+    w: MaybeUninit<i32>,
+}
+impl Int3 {
+    #[inline] const fn new(x: i32, y: i32, z: i32) -> Self {
+        Self {
+            x,y,z,w: MaybeUninit::uninit()
+        }
+    }
+    #[inline] fn bitwise_neg(self) -> Self {
+        Self::new(self.x.neg(), self.y.neg(), self.z.neg())
+    }
+    #[inline] fn bitwise_and(self,other: Self) -> Self {
+        Self::new(self.x.bitand(other.x), self.y.bitand(other.y), self.z.bitand(other.z))
+    }
+    #[inline] fn bitwise_or(self, other: Self) -> Self {
+        Self::new(self.x.bitor(other.x), self.y.bitor(other.y), self.z.bitor(other.z))
+    }
+    #[inline] fn bitselect(self, y: Self, mask: Self) -> Self {
+        self.bitwise_and(mask.bitwise_neg()).bitwise_or(y.bitwise_and(mask))
+    }
+}
+
+#[repr(C, align(16))]
+pub struct Int4 {
+    x: i32,
+    y: i32,
+    z: i32,
+    w: i32,
+}
+impl Int4 {
+    pub const fn new(x: i32, y: i32, z: i32, w: i32) -> Self {
+        Self { x,y,z,w }
+    }
+}
+
+
+
 
 #[repr(C)]
 #[derive(Copy,Clone,Debug)]
@@ -55,7 +100,14 @@ pub struct Float3 {
     padding: MaybeUninit<f32>, //MSL table 2.3, float3 is 16 bytes
 }
 
+impl PartialEq for Float3 {
+    fn eq(&self, other: &Self) -> bool {
+        self.x == other.x && self.y == other.y && self.z == other.z
+    }
+}
+
 impl Float3 {
+    pub const ZERO: Self = Float3::new(0.0, 0.0, 0.0);
     ///Creates a new type.
     #[inline] pub const fn new(x: f32, y: f32, z: f32) -> Self {
         Float3 {
@@ -93,6 +145,26 @@ impl Float3 {
         Float3::new(self.x * other, self.y * other, self.z * other)
     }
 
+    #[inline] pub fn elementwise_sub(self, other: Float3) -> Self {
+        Float3::new(self.x - other.x, self.y - other.y, self.z - other.z)
+    }
+    #[inline] pub fn elementwise_add(self, other: Float3) -> Self {
+        Float3::new(self.x + other.x, self.y + other.y, self.z + other.z)
+    }
+    #[inline] pub fn bitselect(self, y: Float3, mask: Int3) -> Float3 {
+        unsafe {
+            let x: Int3 = std::mem::transmute(self);
+            let y: Int3 = std::mem::transmute(y);
+            let result = x.bitselect(y,mask);
+            let r_f3: Float3 = std::mem::transmute(result);
+            r_f3
+        }
+    }
+    #[inline] pub fn abs(self) -> Float3 {
+        let zero = Float3::ZERO;
+        zero.bitselect(self, Int3::new(0x7fffffff, 0x7fffffff, 0x7fffffff))
+    }
+
     #[inline] pub fn reduce_add(self) -> f32 {
         self.x + self.y + self.z
     }
@@ -113,6 +185,12 @@ impl Float3 {
             extend.fast_rsqrt().x
         };
         self.elementwise_mult_scalar( rsqrd)
+    }
+    #[inline] pub fn fast_length(self) -> f32 {
+        self.precise_length() //odd, I know!??
+    }
+    #[inline] pub fn precise_length(self) -> f32 {
+        self.length_squared().sqrt()
     }
 }
 
@@ -175,4 +253,13 @@ impl Float4 {
     assert!((norm.x() - 0.26).abs() < 0.1);
     assert!((norm.y() - 0.53).abs() < 0.1);
     assert!((norm.z() - 0.80).abs() < 0.1);
+}
+
+#[test] fn test_abs() {
+    let a = Float3::new(0.0, -20.0, 13370000.0);
+    let abs = a.abs();
+    assert_eq!(a.x.abs(),abs.x);
+    assert_eq!(a.y.abs(),abs.y);
+    assert_eq!(a.z.abs(),abs.z);
+
 }
