@@ -164,6 +164,9 @@ impl Float3 {
         let zero = Float3::ZERO;
         zero.bitselect(self, Int3::new(0x7fffffff, 0x7fffffff, 0x7fffffff))
     }
+    #[inline] pub fn max(self) -> f32 {
+        self.x.max(self.y.max(self.z))
+    }
 
     #[inline] pub fn reduce_add(self) -> f32 {
         self.x + self.y + self.z
