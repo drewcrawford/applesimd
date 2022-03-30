@@ -241,6 +241,35 @@ impl Float4 {
     #[inline] pub fn w_mut(&mut self) -> &mut f32 {
         &mut self.w
     }
+    #[inline] pub fn fast_length(self) -> f32 {
+        self.precise_length() //odd, I know!??
+    }
+    #[inline] pub fn precise_length(self) -> f32 {
+        self.length_squared().sqrt()
+    }
+    #[inline] pub fn length_squared(self) -> f32 {
+        self.dot( self)
+    }
+    #[inline] pub fn dot(self, other: Self) -> f32 {
+        self.elementwise_mult(other).reduce_add()
+    }
+    #[inline] pub fn elementwise_mult(self,other: Self) -> Self {
+        Self::new(self.x * other.x, self.y * other.y, self.z * other.z, self.w * other.w)
+    }
+    #[inline] pub fn elementwise_mult_scalar(self, scalar: f32) -> Self {
+        Self::new(self.x * scalar, self.y * scalar, self.z * scalar, self.w * scalar)
+    }
+    #[inline] pub fn reduce_add(self) -> f32 {
+        self.x + self.y + self.z + self.w
+    }
+    #[inline] pub fn fast_normalize(self) -> Self {
+        let length = self.length_squared();
+        let rsqrd = unsafe {
+            let extend = Float2::from_undef(length);
+            extend.fast_rsqrt().x
+        };
+        self.elementwise_mult_scalar(rsqrd)
+    }
 }
 
 
